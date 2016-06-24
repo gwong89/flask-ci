@@ -25,10 +25,11 @@ def webhook():
 		
 		file_name = "%s-%s.tar.gz" % (pull_request_repo_name, pull_request_hash)
 		download_url = "https://github.com/%s/%s/archive/%s.tar.gz" % (pull_request_repo_owner, pull_request_repo_name, pull_request_hash)
-		downloaded_file =  download_file(download_url, file_name)
+		temp_directory = "tmp"
+		downloaded_file =  download_file(download_url, file_name, temp_directory)
 		
 		if downloaded_file:
-			unzipped_file = unzip_file(downloaded_file)
+			unzipped_file = unzip_file(downloaded_file, temp_directory)
 			if unzipped_file:
 				#subprocess.Popen('path/to/file/bin/kalite start --foreground --benchmark')
 				print "successfully unzipped"
@@ -56,9 +57,11 @@ def webhook():
 
 
 
-def download_file(url, file_name):
+def download_file(url, file_name, temp_dir):
+	if not os.path.exists(temp_dir):
+		os.mkdir(temp_dir)
 	local_file = file_name
-	with open(local_file, 'wb') as f:
+	with open(os.path.join(temp_dir,local_file), 'wb') as f:
 		r = requests.get(url, stream=True)
 		if not r.ok:
 			return False
@@ -66,11 +69,11 @@ def download_file(url, file_name):
 			for chunk in r.iter_content(chunk_size=1024):
 				if chunk:
 					f.write(chunk)
-	return local_file
+	return os.path.join(temp_dir,local_file)
 
-def unzip_file(filename):
+def unzip_file(filename, temp_dir):
 	tar = tarfile.open(filename)
-	tar.extractall()
+	tar.extractall(temp_dir)
 	tar.close()
 	return True
 
